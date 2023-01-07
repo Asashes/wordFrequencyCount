@@ -9,6 +9,10 @@
 #include <QRegularExpression>
 #include <QHash>
 #include <QStandardItemModel>
+#include <list>
+#include <QMap>
+#include <QSize>
+#include <QDir>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -21,7 +25,7 @@ class Widget : public QWidget
 public:
     Widget(QWidget *parent = nullptr);
     ~Widget();
-
+    std::list<std::pair<QString,int>>::iterator FindInList(std::list<std::pair<QString,int>>& list, QString str);
 private slots:
     void on_btnFileSelect_clicked();
 
@@ -29,10 +33,14 @@ private slots:
 
     void on_btnStartCount_clicked();
 
+    void on_btnExport_clicked();
+
 private:
     Ui::Widget *ui;
     void CountLinkList();
     void CountHashMap();
     void CountBinaryTree();
+
 };
 #endif // WIDGET_H
+
