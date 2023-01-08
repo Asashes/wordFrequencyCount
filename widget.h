@@ -13,6 +13,8 @@
 #include <QMap>
 #include <QSize>
 #include <QDir>
+#include <QDebug>
+#include <sys/time.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -35,12 +37,15 @@ private slots:
 
     void on_btnExport_clicked();
 
+    void on_btnTest_clicked();
+
 private:
     Ui::Widget *ui;
     void CountLinkList();
     void CountHashMap();
     void CountBinaryTree();
-
+    void SetTestFile();
+    void WriteResultFile(QString algorithm = "", QString time = "");
 };
 #endif // WIDGET_H
 

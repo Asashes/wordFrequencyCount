@@ -73,7 +73,7 @@ void Widget::CountLinkList()
     ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "单词" << "次数");
     int row = 0;
     for (auto it = list.begin(); it != list.end(); ++it){
-        qDebug() << it->first << it->second;
+        //qDebug() << it->first << it->second;
         ui->tableWidget->setItem(row, 0, new QTableWidgetItem(it->first));
         ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it->second)));
         row++;
@@ -125,7 +125,7 @@ void Widget::CountHashMap()
     ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "单词" << "次数");
     int row = 0;
     for (auto it = hashmap.begin(); it != hashmap.end(); ++it){
-        qDebug() << it.key() << it.value();
+        //qDebug() << it.key() << it.value();
         ui->tableWidget->setItem(row, 0, new QTableWidgetItem(it.key()));
         ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
         row++;
@@ -177,7 +177,7 @@ void Widget::CountBinaryTree()
     ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "单词" << "次数");
     int row = 0;
     for (auto it = rb_tree.begin(); it != rb_tree.end(); ++it){
-        qDebug() << it.key() << it.value();
+        //qDebug() << it.key() << it.value();
         ui->tableWidget->setItem(row, 0, new QTableWidgetItem(it.key()));
         ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
         row++;
@@ -222,22 +222,84 @@ void Widget::on_btnStartCount_clicked()
 //输出结果到文件
 void Widget::on_btnExport_clicked()
 {
+    WriteResultFile();
+}
+
+//新建测试文件和结果文件
+void Widget::SetTestFile()
+{
+    QFile file("test_text.txt");
+    if (!file.open(QIODevice::WriteOnly)){
+        QMessageBox::warning(this,"警告","创建测试文件失败!");
+        return;
+    }
+    file.write(QString("It seems to me a very difficult thing to put into words the beliefs we hold and what they make us do in our life.\n").toUtf8());
+    file.write(QString("I think I was fortunate because I grew up in a family where there was a very deep religious feeling.\n").toUtf8());
+    file.write(QString("I don’t think it was spoken of a great deal. It was more or less taken for granted that everybody held certain beliefs").toUtf8());
+    file.write(QString(" and needed certain reinforcements of their strength and that came through your belief in God and your knowledge of prayer.").toUtf8());
+    ui->fileInfo->clear();
+    ui->fileInfo->setText(QDir::currentPath()+"/test_text.txt");
+    QFile file_r("result.txt");
+    if (!file_r.open(QIODevice::WriteOnly | QIODevice::Truncate)){
+        QMessageBox::warning(this,"警告","创建结果文件失败!");
+        return;
+    }
+}
+
+//将结果写入文件，自动化测试调用该函数时要传入所用的算法和时间
+void Widget::WriteResultFile(QString algorithm, QString time)
+{
     if (ui->tableWidget->rowCount() == 0) {
         QMessageBox::warning(this,"警告","请先进行词频统计");
         return;
     }
     QFile file("result.txt");
-    if (!file.open(QIODevice::WriteOnly)){
-        QMessageBox::warning(this,"警告","打开文件失败!");
-        return;
+    if (algorithm != "" && time != "") {
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+            QMessageBox::warning(this,"警告","打开文件失败!");
+            return;
+        }
+        file.write(("使用算法：" + algorithm + ' ' + "所用时间:" + time + '\n').toUtf8());
+        qDebug() << "使用算法：" + algorithm + ' ' + "所用时间:" + time;
+    } else {
+        if (!file.open(QIODevice::WriteOnly)){
+            QMessageBox::warning(this,"警告","打开文件失败!");
+            return;
+        }
     }
-    for(int i = 0; i < ui->tableWidget->rowCount(); i++) {
+    for (int i = 0; i < ui->tableWidget->rowCount(); i++) {
         QString word, count;
         word = ui->tableWidget->item(i,0)->text();
         count = ui->tableWidget->item(i,1)->text();
         file.write((word + ' ' + count + '\n').toUtf8());
     }
     file.close();
-    QMessageBox::information(this,"提示","结果文件result.txt的路径：" + QDir::currentPath());
+    if(algorithm == "" && time == ""){
+        QMessageBox::information(this,"提示","结果文件result.txt的路径：" + QDir::currentPath());
+    }
 }
 
+void Widget::on_btnTest_clicked()
+{
+    SetTestFile();
+    double time_Start = (double)clock();
+    CountLinkList();
+    double time_End = (double)clock();
+    QString time = QString::number((time_End - time_Start)/1000.0) + "s";
+    WriteResultFile("双链表",time);
+    time_Start = (double)clock();
+    CountHashMap();
+    time_End = (double)clock();
+    time = QString::number((time_End - time_Start)/1000.0) + "s";
+    WriteResultFile("哈希表",time);
+    time_Start = (double)clock();
+    CountBinaryTree();
+    time_End = (double)clock();
+    time = QString::number((time_End - time_Start)/1000.0) + "s";
+    WriteResultFile("二叉树",time);
+    ui->fileInfo->clear();
+    ui->tableWidget->clear();
+    ui->tableWidget->setRowCount(0);
+    ui->tableWidget->setColumnCount(0);
+    QMessageBox::information(this,"提示","测试完成，结果文件result.txt的路径：" + QDir::currentPath());
+}
