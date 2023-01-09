@@ -49,7 +49,7 @@ private slots:
 
     void on_btnExport_clicked();
 
-    void on_btnTest_clicked();
+    //void on_btnTest_clicked();
 
     void set_progress(int value);
 
@@ -62,7 +62,7 @@ private:
     void CountLinkList();
     void CountHashMap();
     void CountBinaryTree();
-    void SetTestFile();
+    //void SetTestFile();
     void WriteResultFile(QString algorithm = "", QString time = "");
 };
 

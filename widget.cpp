@@ -314,7 +314,7 @@ void Widget::on_btnExport_clicked()
 }
 
 //新建测试文件和结果文件
-void Widget::SetTestFile()
+/*void Widget::SetTestFile()
 {
     QFile file("test_text.txt");
     if (!file.open(QIODevice::WriteOnly)){
@@ -332,7 +332,7 @@ void Widget::SetTestFile()
         QMessageBox::warning(this,"警告","创建结果文件失败!");
         return;
     }
-}
+}*/
 
 //将结果写入文件，自动化测试调用该函数时要传入所用的算法和时间
 void Widget::WriteResultFile(QString algorithm, QString time)
@@ -366,7 +366,7 @@ void Widget::WriteResultFile(QString algorithm, QString time)
         QMessageBox::information(this,"提示","统计完成，结果文件 result.txt 的路径：" + QDir::currentPath());
     }
 }
-
+/*
 void Widget::on_btnTest_clicked()
 {
     SetTestFile();
@@ -390,4 +390,4 @@ void Widget::on_btnTest_clicked()
     ui->tableWidget->setRowCount(0);
     ui->tableWidget->setColumnCount(0);
     QMessageBox::information(this,"提示","测试完成，结果文件 result.txt 的路径：" + QDir::currentPath());
-}
+}*/
