@@ -261,13 +261,19 @@ void Widget::CountBinaryTree()
     for (auto it = rb_tree.begin(); it != rb_tree.end(); ++it){
         //qDebug() << it.key() << it.value();
         ui->tableWidget->setItem(row, 0, new QTableWidgetItem(it.key()));
-        ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
+        //ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
+        QTableWidgetItem *item = new QTableWidgetItem;
+        item->setData(Qt::EditRole , it.value());
+        ui->tableWidget->setItem(row , 1 , item);
         row++;
     }
     for (auto it = rb_tree_punctuation.begin(); it != rb_tree_punctuation.end(); ++it){
         //qDebug() << it.key() << it.value();
         ui->tableWidget->setItem(row, 0, new QTableWidgetItem(QString(it.key())));
-        ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
+        //ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
+        QTableWidgetItem *item = new QTableWidgetItem;
+        item->setData(Qt::EditRole , it.value());
+        ui->tableWidget->setItem(row , 1 , item);
         row++;
     }
     ui->tableWidget->sortByColumn(1,Qt::DescendingOrder);
