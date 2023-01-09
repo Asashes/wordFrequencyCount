@@ -16,7 +16,8 @@ Widget::~Widget()
     delete ui;
 }
 
-void Widget::set_progress(int value)
+//连接到进度条的槽函数，用于更新进度条的值
+void Widget::set_progress(int value)    //由于在子线程中无法直接操作ui，本想在子线程中发出信号调用该槽函数更新进度条，但最终没有用子线程，也就意义不大了
 {
     ui->progressBar->setValue(value);
 }
@@ -44,23 +45,22 @@ void Widget::CountLinkList()
     ui->progressBar->setRange(0,file.size());
     ui->progressBar->setValue(0);
     double time_Start = (double)clock();
-    uchar* const pfile = file.map(0,file.size());
-    uchar* p = pfile;
+    uchar* const pfile = file.map(0,file.size());   //指向被映射到内存的文件内容
+    uchar* p = pfile;           //遍历文件
      //KeepLiveBegin(true)
     IgnoreEvent ignore;
     QElapsedTimer et;
     et.start();
     while (p - pfile < file.size()) {
-        if (et.elapsed() > 100) {
+        if (et.elapsed() > kprocess_events_time) {      //每隔 100ms调用 QCoreApplication::processEvents()防止 ui假死
             QCoreApplication::processEvents();
             et.restart();
         }
         emit progress_changed(p - pfile);
         //ui->progressBar->setValue(p - pfile);
-        QString str;
+        QString str;        //提取每个单词
         while (char(*p) == ' ' || char(*p) == '\n' || char(*p) == '\r' || char(*p) == '\t') p++;
         while (p - pfile < file.size() && char(*p) != ' ' && char(*p) != '\n' && char(*p) != '\r' && char(*p) != '\t') {
-
             if (char(*p) >= 'a' && char(*p) <= 'z') {
                 str += char(*p);
                 p++;
@@ -118,29 +118,28 @@ void Widget::CountHashMap()
         QMessageBox::warning(this,"警告","打开文件失败!");
         return;
     }
-    QHash<QString,int> hashmap;
-    QHash<char,int> hashmap_punctuation;
+    QHash<QString,int> hashmap;             //存储单词和数字
+    QHash<char,int> hashmap_punctuation;    //存储标点
     ui->progressBar->setRange(0,file.size());
     ui->progressBar->setValue(0);
     double time_Start = (double)clock();
-    uchar* const pfile = file.map(0,file.size());
-    uchar* p = pfile;
+    uchar* const pfile = file.map(0,file.size());   //指向被映射到内存的文件内容
+    uchar* p = pfile;   //遍历文件
     //KeepLiveBegin(true)
     IgnoreEvent ignore;
     QElapsedTimer et;
     et.start();
     while (p - pfile < file.size()) {
-        if (et.elapsed() > 100) {
+        if (et.elapsed() > kprocess_events_time) {       //每隔 100ms调用 QCoreApplication::processEvents()防止 ui假死
             QCoreApplication::processEvents();
             et.restart();
         }
         emit progress_changed(p - pfile);
         //ui->progressBar->setValue(p - pfile);
-        QString str;
-        while (char(*p) == ' ' || char(*p) == '\n' || char(*p) == '\r' || char(*p) == '\t') p++;
+        QString str;        //提取每个单词
+        while (char(*p) == ' ' || char(*p) == '\n' || char(*p) == '\r' || char(*p) == '\t') p++;    //跳过单词间的空白符号
         while (p - pfile < file.size() && char(*p) != ' ' && char(*p) != '\n' && char(*p) != '\r' && char(*p) != '\t') {
-
-            if (char(*p) >= 'a' && char(*p) <= 'z') {
+            if (char(*p) >= 'a' && char(*p) <= 'z') {       //提取字母和数字
                 str += char(*p);
                 p++;
             } else if (char(*p) >= 'A' && char(*p) <= 'Z') {
@@ -149,7 +148,7 @@ void Widget::CountHashMap()
             } else if (char(*p) >= '0' && char(*p) <= '9') {
                 str += char(*p);
                 p++;
-            } else {
+            } else {    //非字母和数字的符号放进 hashmap_punctuation
                 if (hashmap_punctuation.find(char(*p)) == hashmap_punctuation.end()) {
                     hashmap_punctuation.insert(char(*p),1);
                 } else {
@@ -200,29 +199,28 @@ void Widget::CountBinaryTree()
         QMessageBox::warning(this,"警告","打开文件失败!");
         return;
     }
-    QMap<QString,int> rb_tree;
-    QMap<char,int> rb_tree_punctuation;
+    QMap<QString,int> rb_tree;              //存储单词和数字
+    QMap<char,int> rb_tree_punctuation;     //存储标点
     ui->progressBar->setRange(0,file.size());
     ui->progressBar->setValue(0);
     double time_Start = (double)clock();
-    uchar* const pfile = file.map(0,file.size());
-    uchar* p = pfile;
+    uchar* const pfile = file.map(0,file.size());   //指向被映射到内存的文件内容
+    uchar* p = pfile;       //遍历文件
     //KeepLiveBegin(true)
     IgnoreEvent ignore;
     QElapsedTimer et;
     et.start();
     while (p - pfile < file.size()) {
-        if (et.elapsed() > 100) {
+        if (et.elapsed() > kprocess_events_time) {      //每隔 100ms调用 QCoreApplication::processEvents()防止 ui假死
             QCoreApplication::processEvents();
             et.restart();
         }
         emit progress_changed(p - pfile);
         //ui->progressBar->setValue(p - pfile);
-        QString str;
-        while (char(*p) == ' ' || char(*p) == '\n' || char(*p) == '\r' || char(*p) == '\t') p++;
+        QString str;        //提取每个单词
+        while (char(*p) == ' ' || char(*p) == '\n' || char(*p) == '\r' || char(*p) == '\t') p++;    //跳过单词间的空白符号
         while (p - pfile < file.size() && char(*p) != ' ' && char(*p) != '\n' && char(*p) != '\r' && char(*p) != '\t') {
-
-            if (char(*p) >= 'a' && char(*p) <= 'z') {
+            if (char(*p) >= 'a' && char(*p) <= 'z') {           //提取字母和数字
                 str += char(*p);
                 p++;
             } else if (char(*p) >= 'A' && char(*p) <= 'Z') {
@@ -365,7 +363,7 @@ void Widget::WriteResultFile(QString algorithm, QString time)
     }
     file.close();
     if(algorithm == "" && time == ""){
-        QMessageBox::information(this,"提示","结果文件result.txt的路径：" + QDir::currentPath());
+        QMessageBox::information(this,"提示","统计完成，结果文件 result.txt 的路径：" + QDir::currentPath());
     }
 }
 
@@ -391,5 +389,5 @@ void Widget::on_btnTest_clicked()
     ui->tableWidget->clear();
     ui->tableWidget->setRowCount(0);
     ui->tableWidget->setColumnCount(0);
-    QMessageBox::information(this,"提示","测试完成，结果文件result.txt的路径：" + QDir::currentPath());
+    QMessageBox::information(this,"提示","测试完成，结果文件 result.txt 的路径：" + QDir::currentPath());
 }
