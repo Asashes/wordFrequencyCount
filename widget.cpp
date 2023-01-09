@@ -6,6 +6,7 @@ Widget::Widget(QWidget *parent)
     , ui(new Ui::Widget)
 {
     ui->setupUi(this);
+    connect(this,&Widget::progress_changed,this,&Widget::set_progress);
     setWindowIcon(QIcon("://quin.ico"));
     setWindowTitle("词频统计程序");
 }
@@ -13,6 +14,11 @@ Widget::Widget(QWidget *parent)
 Widget::~Widget()
 {
     delete ui;
+}
+
+void Widget::set_progress(int value)
+{
+    ui->progressBar->setValue(value);
 }
 
 //在list中查找对应的str，找到返回对应节点的迭代器，否则返回list末尾的迭代器
@@ -35,35 +41,58 @@ void Widget::CountLinkList()
         return;
     }
     std::list<std::pair<QString,int>> list;
-    QTextStream text_stream(&file);
-    while (!text_stream.atEnd()){
+    ui->progressBar->setRange(0,file.size());
+    ui->progressBar->setValue(0);
+    double time_Start = (double)clock();
+    uchar* const pfile = file.map(0,file.size());
+    uchar* p = pfile;
+     //KeepLiveBegin(true)
+    IgnoreEvent ignore;
+    QElapsedTimer et;
+    et.start();
+    while (p - pfile < file.size()) {
+        if (et.elapsed() > 100) {
+            QCoreApplication::processEvents();
+            et.restart();
+        }
+        emit progress_changed(p - pfile);
+        //ui->progressBar->setValue(p - pfile);
         QString str;
-        text_stream>>str;
-        str = str.toLower();
-        //提取标点符号
-        QString punctuation = str;
-        punctuation.remove(QRegularExpression("[a-z0-9]"));
-        if (punctuation != "") {
-            for (auto it = punctuation.begin(); it!= punctuation.end(); ++it) {
-                auto list_it = FindInList(list,*it);
-                if (list_it == list.end()) {
-                    list.push_back(std::make_pair(*it,1));
+        while (char(*p) == ' ' || char(*p) == '\n' || char(*p) == '\r' || char(*p) == '\t') p++;
+        while (p - pfile < file.size() && char(*p) != ' ' && char(*p) != '\n' && char(*p) != '\r' && char(*p) != '\t') {
+
+            if (char(*p) >= 'a' && char(*p) <= 'z') {
+                str += char(*p);
+                p++;
+            } else if (char(*p) >= 'A' && char(*p) <= 'Z') {
+                str += char(*p + 32);
+                p++;
+            } else if (char(*p) >= '0' && char(*p) <= '9') {
+                str += char(*p);
+                p++;
+            } else {
+                auto it = FindInList(list,QString(char(*p)));
+                if (it == list.end()) {
+                    list.push_back(std::make_pair(QString(char(*p)),1));
                 } else {
-                    list_it->second++;
+                    it->second++;
                 }
+                p++;
             }
         }
-        //提取单词（包括连字符- 撇号'` ）、数字
-        str.remove(QRegularExpression("[^a-z0-9`'-]"));
-        if (str != "") {
-            auto list_it = FindInList(list,str);
-            if (list_it == list.end()){
-                list.push_back(std::make_pair(str,1));
-            } else {
-                list_it->second++;
-            }
+        auto it = FindInList(list,str);
+        if (it == list.end()) {
+            list.push_back(std::make_pair(str,1));
+        } else {
+            it->second++;
         }
     }
+    //KeepLiveEnd
+    double time_End = (double)clock();
+    qDebug() << QString::number((time_End - time_Start)/1000.0) + "s";
+    //ui->progressBar->setValue(file.size());
+    emit progress_changed(file.size());
+    file.unmap(pfile);
     file.close();
     //设置tableWidget
     ui->tableWidget->clear();
@@ -73,12 +102,13 @@ void Widget::CountLinkList()
     ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "单词" << "次数");
     int row = 0;
     for (auto it = list.begin(); it != list.end(); ++it){
-        //qDebug() << it->first << it->second;
+        //qDebug() << it.key() << it.value();
         ui->tableWidget->setItem(row, 0, new QTableWidgetItem(it->first));
         ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it->second)));
         row++;
     }
 }
+
 
 //用哈希表统计词频，将结果放在tableWidget中
 void Widget::CountHashMap()
@@ -89,44 +119,74 @@ void Widget::CountHashMap()
         return;
     }
     QHash<QString,int> hashmap;
-    QTextStream text_stream(&file);
-    while (!text_stream.atEnd()){
+    QHash<char,int> hashmap_punctuation;
+    ui->progressBar->setRange(0,file.size());
+    ui->progressBar->setValue(0);
+    double time_Start = (double)clock();
+    uchar* const pfile = file.map(0,file.size());
+    uchar* p = pfile;
+    //KeepLiveBegin(true)
+    IgnoreEvent ignore;
+    QElapsedTimer et;
+    et.start();
+    while (p - pfile < file.size()) {
+        if (et.elapsed() > 100) {
+            QCoreApplication::processEvents();
+            et.restart();
+        }
+        emit progress_changed(p - pfile);
+        //ui->progressBar->setValue(p - pfile);
         QString str;
-        text_stream>>str;
-        str = str.toLower();
-        //提取标点符号
-        QString punctuation = str;
-        punctuation.remove(QRegularExpression("[a-z0-9]"));
-        if (punctuation != "") {
-            for (auto it = punctuation.begin(); it!= punctuation.end(); ++it) {
-                if (hashmap.find(*it) == hashmap.end()) {
-                    hashmap.insert(*it,1);
+        while (char(*p) == ' ' || char(*p) == '\n' || char(*p) == '\r' || char(*p) == '\t') p++;
+        while (p - pfile < file.size() && char(*p) != ' ' && char(*p) != '\n' && char(*p) != '\r' && char(*p) != '\t') {
+
+            if (char(*p) >= 'a' && char(*p) <= 'z') {
+                str += char(*p);
+                p++;
+            } else if (char(*p) >= 'A' && char(*p) <= 'Z') {
+                str += char(*p + 32);
+                p++;
+            } else if (char(*p) >= '0' && char(*p) <= '9') {
+                str += char(*p);
+                p++;
+            } else {
+                if (hashmap_punctuation.find(char(*p)) == hashmap_punctuation.end()) {
+                    hashmap_punctuation.insert(char(*p),1);
                 } else {
-                    hashmap[*it]++;
+                    hashmap_punctuation[char(*p)]++;
                 }
+                p++;
             }
         }
-        //提取单词（包括连字符- 撇号'` ）、数字
-        str.remove(QRegularExpression("[^a-z0-9`'-]"));
-        if (str != "") {
-            if (hashmap.find(str) == hashmap.end()){
-                hashmap.insert(str,1);
-            } else {
-                hashmap[str]++;
-            }
+        if (hashmap.find(str) == hashmap.end()){
+            hashmap.insert(str,1);
+        } else {
+            hashmap[str]++;
         }
     }
+    //KeepLiveEnd
+    double time_End = (double)clock();
+    qDebug() << QString::number((time_End - time_Start)/1000.0) + "s";
+    //ui->progressBar->setValue(file.size());
+    emit progress_changed(file.size());
+    file.unmap(pfile);
     file.close();
     //设置tableWidget
     ui->tableWidget->clear();
     ui->tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->tableWidget->setRowCount(hashmap.size());
+    ui->tableWidget->setRowCount(hashmap.size() + hashmap_punctuation.size());
     ui->tableWidget->setColumnCount(2);
     ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "单词" << "次数");
     int row = 0;
     for (auto it = hashmap.begin(); it != hashmap.end(); ++it){
         //qDebug() << it.key() << it.value();
         ui->tableWidget->setItem(row, 0, new QTableWidgetItem(it.key()));
+        ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
+        row++;
+    }
+    for (auto it = hashmap_punctuation.begin(); it != hashmap_punctuation.end(); ++it){
+        //qDebug() << it.key() << it.value();
+        ui->tableWidget->setItem(row, 0, new QTableWidgetItem(QString(it.key())));
         ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
         row++;
     }
@@ -141,44 +201,74 @@ void Widget::CountBinaryTree()
         return;
     }
     QMap<QString,int> rb_tree;
-    QTextStream text_stream(&file);
-    while (!text_stream.atEnd()){
+    QMap<char,int> rb_tree_punctuation;
+    ui->progressBar->setRange(0,file.size());
+    ui->progressBar->setValue(0);
+    double time_Start = (double)clock();
+    uchar* const pfile = file.map(0,file.size());
+    uchar* p = pfile;
+    //KeepLiveBegin(true)
+    IgnoreEvent ignore;
+    QElapsedTimer et;
+    et.start();
+    while (p - pfile < file.size()) {
+        if (et.elapsed() > 100) {
+            QCoreApplication::processEvents();
+            et.restart();
+        }
+        emit progress_changed(p - pfile);
+        //ui->progressBar->setValue(p - pfile);
         QString str;
-        text_stream>>str;
-        str = str.toLower();
-        //提取标点符号
-        QString punctuation = str;
-        punctuation.remove(QRegularExpression("[a-z0-9]"));
-        if (punctuation != "") {
-            for (auto it = punctuation.begin(); it!= punctuation.end(); ++it) {
-                if (rb_tree.find(*it) == rb_tree.end()) {
-                    rb_tree.insert(*it,1);
+        while (char(*p) == ' ' || char(*p) == '\n' || char(*p) == '\r' || char(*p) == '\t') p++;
+        while (p - pfile < file.size() && char(*p) != ' ' && char(*p) != '\n' && char(*p) != '\r' && char(*p) != '\t') {
+
+            if (char(*p) >= 'a' && char(*p) <= 'z') {
+                str += char(*p);
+                p++;
+            } else if (char(*p) >= 'A' && char(*p) <= 'Z') {
+                str += char(*p + 32);
+                p++;
+            } else if (char(*p) >= '0' && char(*p) <= '9') {
+                str += char(*p);
+                p++;
+            } else {
+                if (rb_tree_punctuation.find(char(*p)) == rb_tree_punctuation.end()) {
+                    rb_tree_punctuation.insert(char(*p),1);
                 } else {
-                    rb_tree[*it]++;
+                    rb_tree_punctuation[char(*p)]++;
                 }
+                p++;
             }
         }
-        //提取单词（包括连字符- 撇号'` ）、数字
-        str.remove(QRegularExpression("[^a-z0-9`'-]"));
-        if (str != "") {
-            if (rb_tree.find(str) == rb_tree.end()){
-                rb_tree.insert(str,1);
-            } else {
-                rb_tree[str]++;
-            }
+        if (rb_tree.find(str) == rb_tree.end()){
+            rb_tree.insert(str,1);
+        } else {
+            rb_tree[str]++;
         }
     }
+    //KeepLiveEnd
+    double time_End = (double)clock();
+    qDebug() << QString::number((time_End - time_Start)/1000.0) + "s";
+    //ui->progressBar->setValue(file.size());
+    emit progress_changed(file.size());
+    file.unmap(pfile);
     file.close();
     //设置tableWidget
     ui->tableWidget->clear();
     ui->tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->tableWidget->setRowCount(rb_tree.size());
+    ui->tableWidget->setRowCount(rb_tree.size() + rb_tree_punctuation.size());
     ui->tableWidget->setColumnCount(2);
     ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "单词" << "次数");
     int row = 0;
     for (auto it = rb_tree.begin(); it != rb_tree.end(); ++it){
         //qDebug() << it.key() << it.value();
         ui->tableWidget->setItem(row, 0, new QTableWidgetItem(it.key()));
+        ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
+        row++;
+    }
+    for (auto it = rb_tree_punctuation.begin(); it != rb_tree_punctuation.end(); ++it){
+        //qDebug() << it.key() << it.value();
+        ui->tableWidget->setItem(row, 0, new QTableWidgetItem(QString(it.key())));
         ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
         row++;
     }
